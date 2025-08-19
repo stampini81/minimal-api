@@ -51,4 +51,11 @@ public class AdministradorRequestTest
 
         Console.WriteLine(admLogado?.Token);
     }
+
+    [TestMethod]
+    public async Task Health_DeveRetornarOk()
+    {
+        var response = await Setup.client.GetAsync("/health");
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+    }
 }

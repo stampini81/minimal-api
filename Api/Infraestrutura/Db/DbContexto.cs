@@ -24,6 +24,12 @@ public class DbContexto : DbContext
                 Perfil = "Adm"
              }
         );
+
+        modelBuilder.Entity<Veiculo>().HasData(
+            new Veiculo { Id = 1, Nome = "Fusca", Marca = "Volkswagen", Ano = 1980 },
+            new Veiculo { Id = 2, Nome = "Gol", Marca = "Volkswagen", Ano = 2005 },
+            new Veiculo { Id = 3, Nome = "Uno", Marca = "Fiat", Ano = 1998 }
+        );
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -31,7 +37,7 @@ public class DbContexto : DbContext
         if(!optionsBuilder.IsConfigured)
         {
             var stringConexao = _configuracaoAppSettings.GetConnectionString("MySql")?.ToString();
-            if(!string.IsNullOrEmpty(stringConexao))
+            if(!string.IsNullOrEmpty(stringConexao) && !string.Equals(stringConexao, "InMemory", StringComparison.OrdinalIgnoreCase))
             {
                 optionsBuilder.UseMySql(
                     stringConexao,

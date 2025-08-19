@@ -12,17 +12,37 @@ public class AdministradorServicoTest
 {
     private DbContexto CriarContextoDeTeste()
     {
-        var assemblyPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        var path = Path.GetFullPath(Path.Combine(assemblyPath ?? "", "..", "..", ".."));
+        // Usa EF InMemory para evitar dependência de MySQL nos testes de unidade
+        var inMemorySettings = new Dictionary<string, string?>
+        {
+            { "ConnectionStrings:MySql", "InMemory" },
+            { "Jwt", "minimal-api-super-secret-key-32bytes-minimum-2025" }
+        };
 
-        var builder = new ConfigurationBuilder()
-            .SetBasePath(path ?? Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-            .AddEnvironmentVariables();
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(inMemorySettings!)
+            .Build();
 
-        var configuration = builder.Build();
+        // Subclasse leve para injetar opções InMemory
+        var options = new DbContextOptionsBuilder<DbContexto>()
+            .UseInMemoryDatabase(databaseName: "test_db")
+            .Options;
 
-        return new DbContexto(configuration);
+        return new DbContextoDeTeste(configuration, options);
+    }
+
+    private class DbContextoDeTeste : DbContexto
+    {
+        private readonly DbContextOptions<DbContexto> _options;
+        public DbContextoDeTeste(IConfiguration configuration, DbContextOptions<DbContexto> options) : base(configuration)
+        {
+            _options = options;
+        }
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            // Força o uso do provedor InMemory durante os testes
+            optionsBuilder.UseInMemoryDatabase("test_db");
+        }
     }
 
 
@@ -30,8 +50,10 @@ public class AdministradorServicoTest
     public void TestandoSalvarAdministrador()
     {
         // Arrange
-        var context = CriarContextoDeTeste();
-        context.Database.ExecuteSqlRaw("TRUNCATE TABLE Administradores");
+    var context = CriarContextoDeTeste();
+    // Limpa entidades usando InMemory
+    context.Administradores.RemoveRange(context.Administradores);
+    context.SaveChanges();
 
         var adm = new Administrador();
         adm.Email = "teste@teste.com";
@@ -51,8 +73,9 @@ public class AdministradorServicoTest
     public void TestandoBuscaPorId()
     {
         // Arrange
-        var context = CriarContextoDeTeste();
-        context.Database.ExecuteSqlRaw("TRUNCATE TABLE Administradores");
+    var context = CriarContextoDeTeste();
+    context.Administradores.RemoveRange(context.Administradores);
+    context.SaveChanges();
 
         var adm = new Administrador();
         adm.Email = "teste@teste.com";
@@ -66,6 +89,6 @@ public class AdministradorServicoTest
         var admDoBanco = administradorServico.BuscaPorId(adm.Id);
 
         // Assert
-        Assert.AreEqual(1, admDoBanco?.Id);
+    Assert.AreEqual(adm.Id, admDoBanco?.Id);
     }
 }

@@ -21,7 +21,8 @@ public class Startup
     public Startup(IConfiguration configuration)
     {
         Configuration = configuration;
-        key = Configuration?.GetSection("Jwt")?.ToString() ?? "";
+    // Read JWT signing key from configuration (appsettings or environment)
+    key = Configuration?.GetValue<string>("Jwt") ?? string.Empty;
     }
 
     private string key = "";
@@ -103,10 +104,51 @@ public class Startup
 
         app.UseCors();
 
+        // Apply migrations and seed default data at startup (idempotent)
+        using (var scope = app.ApplicationServices.CreateScope())
+        {
+            var ctx = scope.ServiceProvider.GetRequiredService<DbContexto>();
+            try
+            {
+                ctx.Database.Migrate();
+
+                if (!ctx.Administradores.Any())
+                {
+                    ctx.Administradores.Add(new Administrador
+                    {
+                        Email = "administrador@teste.com",
+                        Senha = "123456",
+                        Perfil = Perfil.Adm.ToString()
+                    });
+                }
+
+                if (!ctx.Veiculos.Any())
+                {
+                    ctx.Veiculos.AddRange(
+                        new Veiculo { Nome = "Fusca", Marca = "Volkswagen", Ano = 1980 },
+                        new Veiculo { Nome = "Gol", Marca = "Volkswagen", Ano = 2005 },
+                        new Veiculo { Nome = "Uno", Marca = "Fiat", Ano = 1998 }
+                    );
+                }
+
+                ctx.SaveChanges();
+            }
+            catch
+            {
+                // Intencionalmente silencioso para não quebrar startup em ambientes sem DB
+            }
+        }
+
         app.UseEndpoints(endpoints => {
 
             #region Home
             endpoints.MapGet("/", () => Results.Json(new Home())).AllowAnonymous().WithTags("Home");
+            #endregion
+
+            #region Health
+            endpoints.MapGet("/health", () => Results.Ok(new { status = "ok", time = DateTime.UtcNow }))
+                .AllowAnonymous()
+                .WithTags("Health");
             #endregion
 
             #region Administradores
@@ -250,8 +292,8 @@ public class Startup
             .RequireAuthorization(new AuthorizeAttribute { Roles = "Adm,Editor" })
             .WithTags("Veiculos");
 
-            endpoints.MapGet("/veiculos", ([FromQuery] int? pagina, IVeiculoServico veiculoServico) => {
-                var veiculos = veiculoServico.Todos(pagina);
+            endpoints.MapGet("/veiculos", ([FromQuery] int? pagina, [FromQuery] string? nome, [FromQuery] string? marca, IVeiculoServico veiculoServico) => {
+                var veiculos = veiculoServico.Todos(pagina, nome, marca);
 
                 return Results.Ok(veiculos);
             }).RequireAuthorization().WithTags("Veiculos");
