@@ -207,3 +207,11 @@ volumes:
 —
 
 Projeto criado para estudo e portfólio, alinhado ao desafio DIO de Minimal API.
+
+## Resumo para submissão (DIO)
+- Objetivo: Minimal API .NET 8 com JWT, CRUDs (Administradores/Veículos), validações, Swagger, EF Core + MySQL, testes e Docker.
+- Diferenciais: filtros e paginação em `/veiculos`, healthcheck `/health`, seed e migrações consolidadas, testes com EF InMemory, Docker Compose pronto.
+- Execução rápida:
+  - Local: `dotnet ef database update --project Api`; `dotnet run --project Api`
+  - Docker: `docker compose up -d --build`
+  - Swagger: `http://localhost:5004/swagger` (Authorize com Bearer token após `POST /administradores/login`)

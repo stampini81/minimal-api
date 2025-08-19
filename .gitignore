@@ -1,3 +1,23 @@
+# Build and tooling
+**/bin/
+**/obj/
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userprefs
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Test
+Test/TestResults/
+coverage/
+
+# Local publish output
+/publish/
 # Created by https://www.toptal.com/developers/gitignore/api/windows,macos,linux,dotnetcore,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=windows,macos,linux,dotnetcore,visualstudiocode
 
